@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-wait-svc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-wait-svc
+  template:
+    metadata:
+      labels:
+        app: nginx-wait-svc
+    spec:
+      initContainers:
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for service 'nginx-wait-svc-svc' DNS...";
+              until nslookup nginx-wait-svc-svc.default.svc.cluster.local; do
+                echo "Service not found yet. Sleeping...";
+                sleep 2;
+              done
+              echo "Service is resolvable. Init complete."
+      containers:
+        - name: nginx
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
